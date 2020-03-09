@@ -1,4 +1,5 @@
 # sprpck
+```
 -------------------------------
 Lynx Sprite Packer Ver 2.0
 (c) 1997..2020 42Bastian Schick
@@ -41,3 +42,4 @@ SPS      => ASCII-hex-number per pel (blank = 0)
 PCX      => either 8 bits / 1 plane, 4bit / 1 plane or 1 bit / 4 planes
 PI1      => 1 bit / 4 planes , Atari ST Low Rez-format
 BMP      => either 8 bits or 4 bits not RLE encoded
+```
