@@ -1,3 +1,8 @@
+#ifdef _WIN32
+#include <fcntl.h>
+#include <corecrt_io.h>
+#endif
+
 #include "sprpck.h"
 #include "bmp.h"
 
@@ -676,21 +681,38 @@ unsigned long LoadFile(char fn[],BYTE **ptr)
   unsigned long len;
   int f;
 
+#ifdef _WIN32
+  if ((f = _open(fn, _O_RDONLY | _O_BINARY)) >= 0)
+#else
   if ((f = open(fn,O_RDONLY | O_BINARY)) >= 0)
+#endif
   {
-    len = lseek(f,0L,SEEK_END);
-    lseek(f,0L,SEEK_SET);
+#ifdef _WIN32
+	  len = _lseek(f, 0L, SEEK_END);
+	  _lseek(f, 0L, SEEK_SET);
+#else
+	  len = lseek(f, 0L, SEEK_END);
+	  lseek(f, 0L, SEEK_SET);
+#endif    
     if ( ( *ptr=malloc(len) ) == NULL)
       return 0;
 #ifdef DEBUG
     printf("filesize: %lu\n", len);
 #endif
-    len  = read(f,*ptr,len);
+#ifdef _WIN32
+	len = _read(f, *ptr, len);
+#else
+	len = read(f, *ptr, len);
+#endif      
 #ifdef DEBUG
     //printf("sizeof(int): %u\n", sizeof(int));
     printf("bytes read: %lu\n", len);
 #endif
-    close(f);
+#ifdef _WIN32
+	_close(f);
+#else
+	close(f);
+#endif       
     if (verbose) printf("Read: %s \n",fn);
 
     return (len);
@@ -786,14 +808,28 @@ void SaveSprite(char *filename,BYTE *ptr,int size,int line,int type)
   if ( type != C_HEADER ) {
     int handle;
 
-    if ( (handle = open(filename,O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644)) < 0 ) {
+#ifdef _WIN32
+	if ((handle = _open(filename, _O_CREAT | _O_TRUNC | _O_BINARY | _O_RDWR, 0644)) < 0)
+#else
+	if ((handle = open(filename, O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644)) < 0)
+#endif
+	{
       error(line,"Couldn't open %s for writing !\n",filename);
     }
 
-    if ( write(handle,ptr,size) != size ){
+#ifdef _WIN32
+	if (_write(handle, ptr, size) != size)
+#else
+	if (write(handle, ptr, size) != size)
+#endif    
+	{
       error(line,"Couldn't write %s !\n",filename);
     }
-    close(handle);
+#ifdef _WIN32
+	_close(handle);
+#else
+	close(handle);
+#endif     
   } else {
     FILE * out;
     char label[34] = "_";
