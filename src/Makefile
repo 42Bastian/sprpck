@@ -1,20 +1,24 @@
 # Lynx sprite packer
-# Makefile for *nix
 
+ifeq ($(OS),Windows_NT)
+CC = x86_64-w64-mingw32-gcc
+EXT=.exe
+else
 CC = gcc
+EXT=#
+endif
 RM = rm -f
-EXT = #.exe
 
-CFLAGS = -O2 -fomit-frame-pointer -DUNIX
+CFLAGS = -Os -fomit-frame-pointer -DUNIX
 
 C_SRC= io.c sprpck.c bin2obj.c
 
 H_SRC= sprpck.h bmp.h
 
 %.o: %.c
-	$(CC)  -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
-sprpck.exe:   io.o sprpck.o sprpck.h
+sprpck$(EXT): io.o sprpck.o sprpck.h
 	$(CC) -s -o $@ sprpck.o io.o
 
 io.o : io.c bmp.h

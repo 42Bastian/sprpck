@@ -4,8 +4,8 @@
 extern BYTE rgb[];
 extern BYTE CollRedirect[];
 
-BYTE *original = NULL;		// ptr to the complete converted file
-int org_w,org_h;					// original size
+BYTE *original = NULL;          // ptr to the complete converted file
+int org_w,org_h;                                        // original size
 
 //
 // prototypes
@@ -21,35 +21,28 @@ long  ConvertFile(BYTE *in,long in_size,int type,int *in_h,int *in_w,int line);
 
 long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
 {
-  int count,count_bpl,x,y,pad,count_planes;
+  int x,y,pad;
 
   long new_size = 0;
-  long save_insize = in_size;
-  int bpp,bpl,planes;
+  int bpp,bpl;
   BYTE r,g,b;
 
   BYTE *pByte, *pByte2, *help;
   PBITMAPFILEHEADER inbmpfile;
   PBITMAPINFO inbmpinfo;
 
-
-  int nColor[256];
+  short nColor[16*16*16];	// Used for counting the colors
   int nActColIndex;
-  BYTE bActColor;
-  BYTE bOrgColIndex[256];
-//
-// BS42 07/08/98
-// cleaned up structure-loading !
-//
+  BYTE bActColor;         // actual color (4 or 8 bit)
+  int nActColor;          // actual color (24 bit)
+  BYTE bOrgColIndex[256];  // used for adjusting a 256 color palette
+  short nOrgColIndex[16];  // used for adjusting a 24bit palette
 
-  inbmpfile = (PBITMAPFILEHEADER) malloc (sizeof(BITMAPFILEHEADER));
+  inbmpfile = (PBITMAPFILEHEADER) malloc(sizeof(BITMAPFILEHEADER));
 
   inbmpfile->bfType    = *(WORD *) (in);
   inbmpfile->bfSize    = *(DWORD *)(in + 2);
   inbmpfile->bfOffBits = *(DWORD *)(in + 10);
-
-//    inbmpfile = (PBITMAPFILEHEADER) in;
-
 
   inbmpinfo = (PBITMAPINFO) malloc (sizeof(BITMAPINFO));
 
@@ -62,49 +55,44 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
   inbmpinfo->bmiHeader.biSizeImage    = *(DWORD *) (in + 34);
   inbmpinfo->bmiHeader.biXPelsPerMeter= *(LONG *)  (in + 38);
   inbmpinfo->bmiHeader.biYPelsPerMeter= *(LONG *)  (in + 42);
-  inbmpinfo->bmiHeader.biClrUsed	= *(DWORD *) (in + 46);
+  inbmpinfo->bmiHeader.biClrUsed        = *(DWORD *) (in + 46);
   inbmpinfo->bmiHeader.biClrImportant = *(DWORD *) (in + 50);
 
-//    inbmpinfo = (PBITMAPINFO) (in + sizeof(BITMAPFILEHEADER));
-
-/*
-  printf("WORD %d, DWORD %d, BYTE %d, UINT %d, LONG %d\n",
-  sizeof(WORD), sizeof(DWORD), sizeof(BYTE), sizeof(UINT), sizeof(LONG));
-  printf("sizeof(BITMAPFILEHEADER)= %d\n", sizeof(BITMAPFILEHEADER));
-  printf("sizeof(BITMAPINFO)= %d\n", sizeof(BITMAPINFO));
-  printf("bfType = %X, bfSize = %lu !\n", inbmpfile->bfType, inbmpfile->bfSize);
-*/
-  if (inbmpfile->bfType == 0x4d42	// 0x4d42 --> 'BM' in Intel
+  if (inbmpfile->bfType == 0x4d42       // 0x4d42 --> 'BM' in Intel
       && inbmpfile->bfSize == (DWORD) in_size)
   {
-    if (verbose)
-    {
+    if (verbose) {
       printf("BMP recognized!\n");
 
       printf("Bitmap file header:\n");
-      printf("filesize: %lu\n", inbmpfile->bfSize);
-      printf("offset to pixels: %lu\n", inbmpfile->bfOffBits);
+      printf("filesize: %d\n", inbmpfile->bfSize);
+      printf("offset to pixels: %d\n", inbmpfile->bfOffBits);
 
       printf("Bitmap info header:\n");
-      printf("linesize in pixels: %lu\n", inbmpinfo->bmiHeader.biSize);
-      printf("Width in pixels: %lu\n", inbmpinfo->bmiHeader.biWidth);
-      printf("Height in pixels: %lu\n", inbmpinfo->bmiHeader.biHeight);
+      printf("linesize in pixels: %d\n", inbmpinfo->bmiHeader.biSize);
+      printf("Width in pixels: %d\n", inbmpinfo->bmiHeader.biWidth);
+      printf("Height in pixels: %d\n", inbmpinfo->bmiHeader.biHeight);
       printf("Planes: %u\n", inbmpinfo->bmiHeader.biPlanes);
       printf("BitCount: %u\n", inbmpinfo->bmiHeader.biBitCount);
-      printf("Compression: %lu (0 = BI_RGB, 1 = BI_RLE8, 2 = BI_RLE4)\n", inbmpinfo->bmiHeader.biCompression);
-      printf("SizeImage: %lu\n", inbmpinfo->bmiHeader.biSizeImage);
-      printf("XPelsPerMeter: %ld\n", inbmpinfo->bmiHeader.biXPelsPerMeter);
-      printf("YPelsPerMeter: %ld\n", inbmpinfo->bmiHeader.biYPelsPerMeter);
-      printf("ColorsUsed: %lu\n", inbmpinfo->bmiHeader.biClrUsed);
-      printf("ColorsImportant: %lu\n", inbmpinfo->bmiHeader.biClrImportant);
-    } // if (verbose)
+      printf("Compression: %d (0 = BI_RGB, 1 = BI_RLE8, 2 = BI_RLE4)\n",
+             inbmpinfo->bmiHeader.biCompression);
+      printf("SizeImage: %d\n", inbmpinfo->bmiHeader.biSizeImage);
+      printf("XPelsPerMeter: %d\n", inbmpinfo->bmiHeader.biXPelsPerMeter);
+      printf("YPelsPerMeter: %d\n", inbmpinfo->bmiHeader.biYPelsPerMeter);
+      printf("ColorsUsed: %d\n", inbmpinfo->bmiHeader.biClrUsed);
+      printf("ColorsImportant: %d\n", inbmpinfo->bmiHeader.biClrImportant);
+    }
 
-    if (inbmpinfo->bmiHeader.biCompression != BI_RGB)
+    if (inbmpinfo->bmiHeader.biCompression != BI_RGB){
       error(line, "RLE-bitmaps are not supported!");
+    }
 
     if (inbmpinfo->bmiHeader.biBitCount != 4 &&
-        inbmpinfo->bmiHeader.biBitCount != 8)
-      error(line, "Only 4- or 8-bit-per-pixel bitmaps are supported!");
+        inbmpinfo->bmiHeader.biBitCount != 8 &&
+        inbmpinfo->bmiHeader.biBitCount != 24)
+    {
+      error(line, "Only 4-, 8- or 24-bit-per-pixel bitmaps are supported!");
+    }
 
     *in_w = org_w = inbmpinfo->bmiHeader.biWidth;
     *in_h = org_h = inbmpinfo->bmiHeader.biHeight;
@@ -113,24 +101,82 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
 
     new_size = (long)( org_w * org_h );
 
-    if ( (original = malloc(new_size)) == NULL)
+    if ( (original = malloc(new_size)) == NULL){
       error(line,"Not enough memory for original bitmap!");
+    }
 
-
-    if (verbose)
+    if (verbose){
       printf("BMP-size : w = %d h = %d (%d planes) \n",org_w,org_h,bpp);
-
+    }
 
     // Scanlines are stored bottom up!
     help = original;
-    pByte2 = in + inbmpfile->bfOffBits
-      + inbmpinfo->bmiHeader.biSizeImage;  // Here end the pixels :)
+    // new patch by kezax. This works with files exported by GIMP and
+    // files generated via devIL library
 
-    if (bpl == 8)
-    {
+    // we start from the end of the file to read lines from top to bottom
+    pByte2 = in + inbmpfile->bfSize;
+
+    if (bpl == 24) {
+      nActColIndex = 0;
+      for (x = 0; x < 16; x++){         // up to 16 colors from a 24bit-BMP
+        nOrgColIndex[x] = nActColIndex;
+      }
+
       nActColIndex = -1;
-      for (x = 0; x < 256; x++)
+      for (x = 0; x < 16*16*16; x++){// Lynx colour palette range: RGB=16*16*16
         nColor[x] = nActColIndex;
+      }
+
+      // A scanline ends always on a 32 bit boundary !
+      pad = (4 - ((org_w * 3) % 4)) % 4;
+
+      // First count the used colours
+      // if up to 16, the colour indexes are adjusted
+      // nActColIndex should be -1 now !!!!!!!
+      for (y = org_h; y ; y--)  {
+        pByte2 -= (org_w*3 + pad); // Scanlines are stored left to right!
+        pByte = pByte2;
+        for (x = org_w; x ; x--) {
+          // RGBTriple
+          b = *pByte++ >> 4; /* rgbBlue */
+          g = *pByte++ >> 4; /* rgbGreen */
+          r = *pByte++ >> 4; /* rgbRed */
+
+          nActColor = g*16*16 + b*16 + r;  //
+          if (nColor[nActColor] == -1) { // A new Color encountered
+            nActColIndex++;
+            nColor[nActColor] = nActColIndex;
+            if (nActColIndex < 16){
+              nOrgColIndex[nActColIndex] = nActColor;// Palette adjusting
+            }
+          }
+          *help++ = nColor[nActColor];
+        }  // x
+      } // y
+
+      if (verbose){
+        printf("Colours used: %d \n", nActColIndex+1);
+      }
+
+      if (nActColIndex >= 16){
+        error(line, "Only 24-bit-per-pixel bitmaps with up to 16"
+              " colours are supported!");
+      }
+
+      // Now adjust the color palette
+      help = rgb;
+      for (x = 0; x < 16; x++) {
+        *help++ = nOrgColIndex[x] >> 8; // green
+        *help++ = nOrgColIndex[x] & 0xff;       // blue, red
+      }
+    }
+
+    if (bpl == 8) {
+      nActColIndex = -1;
+      for (x = 0; x < 256; x++){
+        nColor[x] = nActColIndex;
+      }
 
       // A scanline ends always on a 32 bit boundary !
       pad = (4 - (org_w % 4)) % 4;
@@ -138,18 +184,13 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
       // First count the used colours
       // if up to 16, the colour indexes are adjusted
       // else the colour indexes are truncated
-      for (y = org_h; y; y--)
-      {
+      for (y = org_h; y ; y--) {
         pByte2 -= (org_w + pad); // Scanlines are stored left to right!
         pByte = pByte2;
 
-        // for (x = org_w; x; x--)
-        //   *help++ = *pByte++ & 0x0f;	// Nur die unteren 4 bit nehmen!
-        for (x = org_w; x; x--)
-        {
+        for (x = org_w; x ; x--) {
           bActColor = *pByte++;
-          if (nColor[bActColor] == -1) // A new Color encountered
-          {
+          if (nColor[bActColor] == -1) { // A new Color encountered
             nActColIndex++;
             nColor[bActColor] = nActColIndex;
             bOrgColIndex[nActColIndex] = bActColor;// Palette adjusting
@@ -157,36 +198,34 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
         }  // x
       } // y
 
-      if (verbose)
+      if (verbose){
         printf("Colours used: %d \n", nActColIndex+1);
+      }
 
       // Now transfer the colour indexes from in to original
       pByte2 = in + inbmpfile->bfOffBits + inbmpinfo->bmiHeader.biSizeImage;  // Here end the pixels :)
 
-      for (y = org_h; y; y--)
-      {
+      for (y = org_h; y ; y--) {
         pByte2 -= (org_w + pad); // Scanlines are stored left to right!
         pByte = pByte2;
 
-        // for (x = org_w; x; x--)
-        //   *help++ = *pByte++ & 0x0f;	// Nur die unteren 4 bit nehmen!
-        if (nActColIndex < 16)
-        {
-          for (x = org_w; x; x--)
+        if (nActColIndex < 16)  {
+          for (x = org_w; x ; x--){
             *help++ = nColor[*pByte++];
-        }
-        else  // > 16 colors: truncate the indexes
-        {
-          for (x = org_w; x; x--)
+          }
+        } else { // > 16 colors: truncate the indexes
+          for (x = org_w; x ; x--){
             *help++ = *pByte++ & 0x0f;
+          }
         }
       } // y
 
       // Now adjust the color palette
-      pByte = in + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+      // 10/20/2018: nop90 - there are different bmp types with different
+      //                     BITMAPINFOHEADER sizes. Better use size field
+      pByte = in + sizeof(BITMAPFILEHEADER) + inbmpinfo->bmiHeader.biSize;
       help = rgb;
-      for (x = 0; x < 16; x++)
-      {
+      for (x = 0; x < 16; x++) {
         // sizeof(RGBQUAD) = 4
         b = (*(pByte + bOrgColIndex[x]*4 + 0)) >> 4; /* rgbBlue */
         g = (*(pByte + bOrgColIndex[x]*4 + 1)) >> 4; /* rgbGreen */
@@ -196,53 +235,47 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
       }
     } // 8 bits
 
-    if (bpl == 4)
-    {
+    if (bpl == 4) {
       // A scanline ends always on a 32 bit boundary !
       pad = (8 - (org_w % 8)) % 8;
-      if (verbose)
+      if (verbose){
         printf("org_w %d, pad %d\n", org_w, pad);
-      for (y = org_h; y; y--)
-      {
+      }
+
+      for (y = org_h; y ; y--){
         pByte2 -= (org_w + pad)/2; // Scanlines are stored left to right!
         pByte = pByte2;
 
-        for (x = org_w; x > 0;){
+        for (x = org_w; x > 0; /* empty */){
 
-          *help++ = (*pByte)>>4;	// Erst die oberen 4 bit nehmen!
+          *help++ = (*pByte)>>4;        // Erst die oberen 4 bit nehmen!
           x--;
-          if (x) // No more nybble-pixels?
-          {
+          if (x){ // No more nybble-pixels?
             *help++ = (*pByte++) & 0x0f;// Dann die unteren 4 bit!
             x--;
           }
         }
       }
-      // Erstellung der Lynx-Farbpalette
-      // Anpassung an den Wertebereich des Lynx: 4 statt 8 bit pro Farbe
-      pByte = in + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+      // 10/20/2018: nop90 - there are different bmp types with different
+      //                     BITMAPINFOHEADER sizes. Better use size field
+      pByte = in + sizeof(BITMAPFILEHEADER) + inbmpinfo->bmiHeader.biSize-2;
       help = rgb;
-      for (x = 16 ; x ; --x)
-      {
+      for (x = 16 ; x ; --x)  {
         // RGBQUAD !!!
-//->	      printf("r %2x g %2x b %2x\n",pByte[2],pByte[1],pByte[0]);
         b = (*pByte++) >> 4; /* rgbBlue */
         g = (*pByte++) >> 4; /* rgbGreen */
         r = (*pByte++) >> 4; /* rgbRed */
-        pByte++;	// skipping rgbReserved
+        pByte++;        // skipping rgbReserved
         *help++ = g;
         *help++ = ( b<<4 ) | r;
       }
-
     } // 4 bits
-
+  } else {
+    printf("BMP not detected!\nSize %ld, %d\n", in_size, inbmpfile->bfSize);
   }
-  else
-  {
-    printf("BMP not detected!\nSize %ld, %ld\n", in_size, inbmpfile->bfSize);
-  }
-  free (inbmpfile);
-  free (inbmpinfo);
+  free(inbmpfile);
+  free(inbmpinfo);
   free(in);
   return ( new_size );
 
@@ -367,7 +400,7 @@ long ConvertPCX(BYTE * in,long in_size,int *in_w, int *in_h,int line)
         }
       }
     } /*while*/
-    #if 1
+#if 1
     if ( pByte != in+save_insize ) {
       pByte = in+save_insize-16*3;
       help = rgb;
@@ -382,7 +415,7 @@ long ConvertPCX(BYTE * in,long in_size,int *in_w, int *in_h,int line)
       }
       if (verbose) printf("PCX:Using palette at the end of file !\n");
     }
-    #endif
+#endif
   }
   else  // 1bit / 8 planes
   {
@@ -441,8 +474,8 @@ long ConvertPCX(BYTE * in,long in_size,int *in_w, int *in_h,int line)
 /* main conversion-loop */
 /************************/
 long ConvertFile(BYTE *in,
-		 long in_size,
-		 int type,
+                 long in_size,
+                 int type,
                  int *in_w,int *in_h,
                  int line)
 {
@@ -522,7 +555,7 @@ long ConvertFile(BYTE *in,
       }
       else if (('A' <= b) && (b <= 'F'))
       {
-      	b = b - 'A' + 10;
+        b = b - 'A' + 10;
       }
       else if (('a' <= b) && (b <= 'f'))
       {
@@ -571,7 +604,7 @@ long ConvertFile(BYTE *in,
       *pByte++ = (b<<4) | r;
     }
 
-    //	  puShort = (USHORT *)pByte2;
+    //    puShort = (USHORT *)pByte2;
 
     pByte = original-16;
 
@@ -750,28 +783,26 @@ void SaveRGB(char *filename,BYTE *pal,int type,int size,int line)
 
 void SaveSprite(char *filename,BYTE *ptr,int size,int line,int type)
 {
-  if ( type != C_HEADER )
-  {
+  if ( type != C_HEADER ) {
     int handle;
 
-    if ( (handle = open(filename,O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644)) <0 )
-    {
+    if ( (handle = open(filename,O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644)) < 0 ) {
       error(line,"Couldn't open %s for writing !\n",filename);
     }
 
-    if ( write(handle,ptr,size) != size )
+    if ( write(handle,ptr,size) != size ){
       error(line,"Couldn't write %s !\n",filename);
+    }
     close(handle);
-  }
-  else
-  {
+  } else {
     FILE * out;
     char label[34] = "_";
     int i,o,segdata;
     char * dot;
 
-    if ( (out = fopen(filename,"wb")) == NULL )
+    if ( (out = fopen(filename,"wb")) == NULL ){
       error(line,"Couldn't open %s !\n",filename);
+    }
 
     dot = strrchr(filename,'.');
     *dot = 0;
@@ -794,24 +825,25 @@ void SaveSprite(char *filename,BYTE *ptr,int size,int line,int type)
     putc(0,out); putc(0,out);        /*symbol pos 0 rel to seg-start*/
     putc(7,out); putc(0,out);        /*symbol flag = rel to seg-start*/
 
-    for (i = size>>5; i ; --i)
-    {
+    for (i = size>>5; i ; --i) {
       putc(0,out);
-      for (o = 32; o ; --o )
+      for (o = 32; o ; --o ){
         putc(*ptr++,out);
+      }
     }
-    if ( (i = size & 0x1f) )
-    {
+    if ( (i = size & 0x1f) ) {
       putc(i,out);
-      for ( ; i ; --i)
+      for ( ; i ; --i){
         putc(*ptr++,out);
+      }
     }
     fclose(out);
   }
 
-  if (verbose)
+  if (verbose){
     printf("Written: %s \n"
            "--------------------------\n",filename);
+  }
 }
 
 void error(int line,char *f,...)
