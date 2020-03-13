@@ -1,3 +1,12 @@
+//*****************************************************************************
+// VISUAL STUDIO I/O COMPATIBLITY
+#ifdef _MSC_VER
+#pragma warning (disable : 4996)		// For deprecated function names (open, etc.)
+#include <fcntl.h>
+#include <corecrt_io.h>
+#endif
+//*****************************************************************************
+
 #include "sprpck.h"
 #include "bmp.h"
 
@@ -678,19 +687,19 @@ unsigned long LoadFile(char fn[],BYTE **ptr)
 
   if ((f = open(fn,O_RDONLY | O_BINARY)) >= 0)
   {
-    len = lseek(f,0L,SEEK_END);
-    lseek(f,0L,SEEK_SET);
+	  len = lseek(f, 0L, SEEK_END);
+	  lseek(f, 0L, SEEK_SET);
     if ( ( *ptr=malloc(len) ) == NULL)
       return 0;
 #ifdef DEBUG
     printf("filesize: %lu\n", len);
 #endif
-    len  = read(f,*ptr,len);
+	len = read(f, *ptr, len);
 #ifdef DEBUG
     //printf("sizeof(int): %u\n", sizeof(int));
     printf("bytes read: %lu\n", len);
 #endif
-    close(f);
+	close(f);
     if (verbose) printf("Read: %s \n",fn);
 
     return (len);
@@ -786,14 +795,14 @@ void SaveSprite(char *filename,BYTE *ptr,int size,int line,int type)
   if ( type != C_HEADER ) {
     int handle;
 
-    if ( (handle = open(filename,O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644)) < 0 ) {
+	if ((handle = open(filename, O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644)) < 0) {
       error(line,"Couldn't open %s for writing !\n",filename);
     }
 
-    if ( write(handle,ptr,size) != size ){
+	if (write(handle, ptr, size) != size) {
       error(line,"Couldn't write %s !\n",filename);
     }
-    close(handle);
+	close(handle);
   } else {
     FILE * out;
     char label[34] = "_";
