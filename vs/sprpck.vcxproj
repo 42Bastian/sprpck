@@ -87,6 +87,9 @@
     <Link>
       <OutputFile>$(SolutionDir)$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /b $(SolutionDir)$(Configuration)\$(TargetName)$(TargetExt) $(SolutionDir)..\bin_win32</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -98,6 +101,9 @@
     <Link>
       <OutputFile>$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /b $(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt) $(SolutionDir)..\bin_win32</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -113,6 +119,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(SolutionDir)$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /b $(SolutionDir)$(Configuration)\$(TargetName)$(TargetExt) $(SolutionDir)..\bin_win32</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -130,6 +139,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /b $(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt) $(SolutionDir)..\bin_win32</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
