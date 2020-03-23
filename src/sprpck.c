@@ -301,7 +301,7 @@ BYTE * packline(BYTE *in,      /* src  */
       do{
         ++counter;
         ++index;
-      }while( last == in[index] );
+      }while( index < len && last == in[index] );
       while( counter >= 16 ){
         pass1[pos++] = newEl(1, start, 16);
         start += 16;
