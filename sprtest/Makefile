@@ -1,4 +1,4 @@
-raw.o: raw.asm ../bg4bit.spr
+raw.o: raw.asm ../pic/bg24bit.spr
 	lyxass -shex $<
 
 .PHONY: send
