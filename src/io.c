@@ -160,7 +160,7 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
               nOrgColIndex[nActColIndex] = nActColor;// Palette adjusting
             }
           }
-          *help++ = nColor[nActColor];
+          *help++ = (BYTE)nColor[nActColor];
         }  // x
       } // y
 
@@ -220,7 +220,7 @@ long ConvertBMP(BYTE * in,long in_size,int *in_w, int *in_h,int line)
 
         if (nActColIndex < 16)  {
           for (x = org_w; x ; x--){
-            *help++ = nColor[*pByte++];
+            *help++ = (BYTE)nColor[*pByte++];
           }
         } else { // > 16 colors: truncate the indexes
           for (x = org_w; x ; x--){
@@ -829,7 +829,7 @@ void SaveSprite(char *filename,BYTE *ptr,int size,int line,int type)
     putc(segdata>>8,out);            /*seg-len high*/
     putc(1,out);                     /*symbols low*/
     putc(0,out);                     /*symbols high*/
-    putc(strlen(label),out);
+    putc((int)strlen(label),out);
     fprintf(out,"%s",label);
     putc(0,out); putc(0,out);        /*symbol pos 0 rel to seg-start*/
     putc(7,out); putc(0,out);        /*symbol flag = rel to seg-start*/
