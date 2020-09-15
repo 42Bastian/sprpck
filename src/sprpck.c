@@ -68,6 +68,8 @@ int verbose;
 BYTE rgb[32];
 BYTE CollRedirect[16];
 
+int dbg = 0;
+
 /* function-prototypes */
 /* io.c */
 extern  void  error(int line,char *w, ...);
@@ -140,13 +142,15 @@ int CountColors(BYTE *raw, int iw, int w, int h, BYTE *pColIndexes)
     for ( x = 0; x < 16; ++x ){
       printf("%4.1d|",x);
     }
+    printf("\n");
     for ( x = 0; x < 16; ++x ){
       printf("----+");
     }
+    printf("\n");
     for ( x = 0; x < 16; ++x ){
       printf("%4.1d|",nColor[x]);
     }
-
+    printf("\n");
     printf("Pixel sum: %ld\n"
            "Colors used: %d\n"
            "Index table:\n",lSum, nCount);
@@ -168,7 +172,7 @@ int CountColors(BYTE *raw, int iw, int w, int h, BYTE *pColIndexes)
 */
 void intobyte(int bits,BYTE val,BYTE **where)
 {
-  static BYTE bit_counter = 8,byte =0;
+  static BYTE bit_counter = 8, byte =0;
   BYTE *dst = *where;
 
   switch( bits ){
@@ -178,6 +182,7 @@ void intobyte(int bits,BYTE val,BYTE **where)
     byte = 0;
     return;
   case 8:
+//->    if ( dbg ) printf("|%02x %d ",byte, bit_counter);
     /* handle end of line */
     *dst++ = byte;
     if ( byte & 0x1 ){
@@ -210,8 +215,6 @@ typedef struct el_s {
   int start;
   int length;
 } el_t;
-
-int dbg = 0;
 
 void dbgout(el_t *el)
 {
@@ -370,7 +373,7 @@ BYTE * packline(BYTE *in,      /* src  */
   currPass = pass1;
   int q = 0;
   int plimit[4] = { 6,5,4,3 };
-  
+
   if ( optimize ){
     nextPass = pass2;
     dbg = 0;
@@ -665,9 +668,9 @@ BYTE * packline(BYTE *in,      /* src  */
       bits += 5+el->length*size;
     }
   }
-  if ( dbg ) printf(": %d(%d)\n\n",bits,(bits+7)/8);
   intobyte(8,0,&out); /* Set end mark */
   *out0 = (BYTE)(out - out0);
+  if ( dbg ) printf(": %d(%d,%d)\n\n",bits,(bits+7)/8,*out0);
   return out;
 }
 
@@ -678,7 +681,7 @@ BYTE * unpackline(BYTE *in, BYTE *out, int len, int size)
 {
   BYTE *out0 = out++;
 
-  intobyte(0,0,0);
+  intobyte(0,0,&out);
 
   while (len){
     intobyte(size,*in,&out);
@@ -719,13 +722,9 @@ int findEdge(BYTE *buffer, int size_x, int edgePen)
 {
   if ( edgePen >= 0 ){
     buffer += size_x-1;
-    while( size_x && *buffer == edgePen ){
+    while( size_x > 1 && *buffer == edgePen ){
       --size_x;
       --buffer;
-    }
-
-    if ( size_x == 0 ){
-      size_x = 1;
     }
   }
   return size_x;
@@ -753,7 +752,7 @@ int packit(BYTE *raw,  /* input data     */
   int y;
   int width;
 
-  if ( (*spr = spr0 = malloc((w+1)*h+1)) == NULL ) return 0;
+  if ( (*spr = spr0 = malloc((w+1)*(h+1))) == NULL ) return 0;
 
   /*** down/right ***/
   for ( y = act_y ; y < h ; ++y ){
@@ -1162,7 +1161,7 @@ int main(int argc,char *argv[])
 
         if (in_size != org_w * org_h) {
           free(original);
-          error(line,"Wrong picture-size !\n");
+          error(line,"Wrong picture-size (%d)\n",in_size);
         }
 
 #ifdef DEBUG
