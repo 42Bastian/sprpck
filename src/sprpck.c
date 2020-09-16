@@ -25,40 +25,40 @@
 
    97/03/20  DO    Support of SPS-files
    97/04/02  42BS  last-bit-bug
-                   added *nix case (no CR !)
+   added *nix case (no CR !)
    97/04/05  42BS  SPS: Last line may have LF (CR)
-                   added -v (verbose) and -c (color index compress)
-                   removed TABs from source
-                   output-file is now optional, default in+".spr"
-                   io separated, conversion of the hole file
-                   included PCX conversion.
+   added -v (verbose) and -c (color index compress)
+   removed TABs from source
+   output-file is now optional, default in+".spr"
+   io separated, conversion of the hole file
+   included PCX conversion.
    97/04/06  42BS  supports now 8bit/1plane or 1bit/4 plane PCX
    97/04/07  42BS  added palette output to the PCX-part
-                   also redirection for the SCB
-                   (needed with option -c !!)
+   also redirection for the SCB
+   (needed with option -c !!)
    97/04/28  CEF   Added '!= 0' segment to eliminate compiler warning
    97/06/09  42BS  Added O_BINARY to IO.C (works now with DOS !)
    97/09/20  42BS  rebuild the interface ( xxxyyy )
-                   now with offset (-oxxxyyy)
-                   build in RAW1 for monochrome sources
-                   moved O_BINARY to sprpck.h
-                   added line-number to error-message
+   now with offset (-oxxxyyy)
+   build in RAW1 for monochrome sources
+   moved O_BINARY to sprpck.h
+   added line-number to error-message
 
    97/11/25  42BS  moved a parameter-check to io.c
    changed default-type to PCX
 
    98/07/02  42BS  Started to add PI1-support
    98/07/02  42BS  finished PI1-support
-                   Input file need not to be reloaded => speed up
+   Input file need not to be reloaded => speed up
    98/07/23  42BS  Bug in ConvertPCX with 1 bit/8 planes PCX removed
    98/07/25  DO    MS Windows BMP-file support added
    98/08/01  DO    Added splitting of one picture into several sprites -ryyyxxx
-                   Auto-setting of sprite pixel size using -c _and_ -z
+   Auto-setting of sprite pixel size using -c _and_ -z
    98/08/07  42BS  Cleaned up BMP-loading and include bin2obj-stuff
    20/03/xx  42BS  Added 4bit/1plane PCX support
-                   Added Karri's "edgePen" idea
-                   Added literal compression.
-                   Code cleanup (more needed!)
+   Added Karri's "edgePen" idea
+   Added literal compression.
+   Code cleanup (more needed!)
 */
 
 #define VER "2.1"
@@ -175,19 +175,21 @@ void intobyte(int bits,BYTE val,BYTE **where)
   static BYTE bit_counter = 8, byte =0;
   BYTE *dst = *where;
 
-  switch( bits ){
+  switch (bits) {
   case 0:
     /* init intobyte */
     bit_counter = 8;
     byte = 0;
     return;
   case 8:
-//->    if ( dbg ) printf("|%02x %d ",byte, bit_counter);
-    /* handle end of line */
+    if (bit_counter != 8) {
+    //->    if ( dbg ) printf("|%02x %d ",byte, bit_counter);
+        /* handle end of line */
     *dst++ = byte;
-    if ( byte & 0x1 ){
+    if (byte & 0x1) {
       *dst++ = 0;    /* be sure the last bit is never set ! */
     }
+  }
     break;
   default:
     if ( bit_counter >= bits ){
@@ -371,12 +373,15 @@ BYTE * packline(BYTE *in,      /* src  */
   if ( dbg ) printf(": %d(%d)\n",bits,(bits+7)/8);
 
   currPass = pass1;
-  int q = 0;
   int plimit[4] = { 6,5,4,3 };
+
+  int limit = plimit[size - 1];
 
   if ( optimize ){
     nextPass = pass2;
     dbg = 0;
+    bits = 0;
+    int round = 0;
     do{
       stacksize = pos;
       min_bits = bits;
@@ -384,251 +389,107 @@ BYTE * packline(BYTE *in,      /* src  */
       pos = 0;
       n_save = 0;
       last_L = NULL;
+      int save_length = 0;
 
-      if (q == 0) {
-        int LB = 5;
-        int B = 0;
-        int length = 0;
-        int saved_low = -1;
+      int LB = 5;
+      int B = 0;
+      int length = 0;
+      int saved_low = -1;
 
-        n_save = -1;
-        for (sp = 0; sp < stacksize; ) {
-          length = 0;
-          n_save = sp;
-          do {
-            el = currPass[sp];
-            if (el->length >= 16) break;
-            if (el->packed && el->length > plimit[size-1]) break;
-            length += el->length;
-            ++sp;
-          } while (sp < stacksize);
-
-          if (n_save == sp) {
-            nextPass[pos++] = el;
-            dbgout(el);
-            ++sp;
-            continue;
-          }
-          if (sp - n_save == 1) {
-            nextPass[pos++] = currPass[n_save];
-            dbgout(currPass[n_save]);
-            sp = n_save + 1;
-            continue;
-          }
-
-          int diff0 = checkLlessP(&currPass[n_save], sp - n_save, size);
-          int diff;
-          int x;
-          int n_save0 = n_save;
-          int best_diff = diff0;
-          do {
-            x = sp;
-            while (x - n_save > 1) {
-              diff = checkLlessP(&currPass[n_save], x - n_save, size);
-              if (diff <= diff0) {
-                diff0 = diff;
-                sp = x;
-              }
-              --x;
-            }
-
-            x = n_save;
-            while (sp - x > 1) {
-              diff = checkLlessP(&currPass[x + 1], sp - x - 1, size);
-              if (diff <= diff0) {
-                diff0 = diff;
-                n_save = x + 1;
-              }
-              ++x;
-            }
-            if (diff0 >= best_diff) break;
-            best_diff = diff0;
-          } while (1);
-
-          if (diff0 >= 0) {
-            while (n_save0 < sp) {
-              nextPass[pos++] = currPass[n_save0];
-              dbgout(currPass[n_save0]);
-              ++n_save0;
-            }
-          }
-          else {
-            while (n_save0 < n_save) {
-              nextPass[pos++] = currPass[n_save0];
-              dbgout(currPass[n_save0]);
-              ++n_save0;
-            }
-            if (n_save < sp) {
-              length = 0;
-              int start = currPass[n_save]->start;
-              while (n_save < sp) {
-                if (length + currPass[n_save]->length >= 16) {
-                  if (length + currPass[n_save]->length == 16) {
-                    length = 16;
-                    ++n_save;
-                  }
-                  el = newEl(0, start, length);
-                  nextPass[pos++] = el;
-
-                  length = 0;
-                  sp = n_save;
-                }
-                else {
-                  length += currPass[n_save]->length;
-                  ++n_save;
-                }
-              }
-              if (length) {
-                el = newEl(0, start, length);
-                nextPass[pos++] = el;
-              }
-            }
-          }
-        }
-      }
-      else {
-
-        for (sp = 0; sp < stacksize; ) {
+      n_save = -1;
+      for (sp = 0; sp < stacksize; ) {
+        length = 0;
+        n_save = sp;
+        do {
           el = currPass[sp];
-          //->      printf("POP:%c%X ",el->packed ? 'P':'L',el->length-1); fflush(stdout);
-          //->      printf(" %d ",el->start); fflush(stdout);
+          if (el->length >= 16) break;
+          if (el->packed && el->length >= plimit[size-1]) break;
+          length += el->length;
           ++sp;
+        } while (sp < stacksize && length < 32);
 
-          if ((el->length == 16) || (el->packed && el->length >= 4)) {
-            if (last_L) {
-              nextPass[pos++] = last_L;
-              dbgout(last_L);
-              last_L = NULL;
-            }
-            while (n_save >= 4) {
-              n = n_save > 16 ? 16 : n_save;
-              nextPass[pos++] = newEl(0, save[n_save - n]->start, n * 2);
-              n_save -= n;
-            }
-            for (n = 0; n < n_save; ++n) {
-              nextPass[pos++] = save[n];
-              dbgout(save[n]);
-            }
-            n_save = 0;
-            nextPass[pos++] = el;
-            dbgout(el);
-          }
-          else if (el->packed && el->length == 3) {
-            if (n_save || last_L == NULL || sp == stacksize ||
-              currPass[sp]->packed)
-            {
-              if (last_L) {
-                nextPass[pos++] = last_L;
-                dbgout(last_L);
-                last_L = NULL;
-              }
-              while (n_save >= 4) {
-                n = n_save > 16 ? 16 : n_save;
-                nextPass[pos++] = newEl(0, save[n_save - n]->start, n * 2);
-                n_save -= n;
-              }
-              for (n = 0; n < n_save; ++n) {
-                nextPass[pos++] = save[n];
-                dbgout(save[n]);
-              }
-              n_save = 0;
-              nextPass[pos++] = el;
-              dbgout(el);
-            }
-            else {
-              if (last_L->length + 3 + currPass[sp]->length <= 16) {
-                last_L->length += 3 + currPass[sp]->length;
-                ++sp;
-              }
-              else {
-                nextPass[pos++] = last_L;
-                dbgout(last_L);
-                last_L = NULL;
-                nextPass[pos++] = el;
-                dbgout(el);
-              }
-            }
-          }
-          else if (el->packed) {
-            if (last_L) {
-              if (last_L->length <= 14) {
-                last_L->length += 2;
-                free(el);
-                el = NULL;
-              }
-              else {
-                nextPass[pos++] = last_L;
-                dbgout(last_L);
-                last_L = NULL;
-              }
-            }
-            if (el) {
-              save[n_save] = el;
-              ++n_save;
-              if (n_save == 8) {
-                el = newEl(0, save[0]->start, 16);
-                nextPass[pos++] = el;
-                dbgout(el);
-                n_save = 0;
-              }
-            }
-          }
-          else {
-            if (n_save != 0) {
-              n = (16 - el->length) / 2;
-              if (n > 0) {
-                n = (n > n_save) ? n_save : n;
-                for (int i = 0; i < n_save - n; ++i) {
-                  nextPass[pos++] = save[i];
-                  dbgout(el);
-                }
-                el->length += 2 * n;
-                el->start = save[n_save - n]->start;
-                n_save = 0;
-              }
-            }
-            if (last_L) {
-              if (last_L->length + el->length > 16) {
-                nextPass[pos++] = last_L;
-                dbgout(last_L);
-                last_L = NULL;
-              }
-              else {
-                last_L->length += el->length;
-                free(el);
-                el = last_L;
-                last_L = NULL;
-              }
-            }
-            if (el->length == 16) {
-              nextPass[pos++] = el;
-              dbgout(el);
-            }
-            else {
-              last_L = el;
-            }
-          }
-        }
-
-        if (last_L) {
-          nextPass[pos++] = last_L;
-          dbgout(last_L);
-          last_L = NULL;
-        }
-
-        if (n_save >= 4) {
-          el = newEl(0, save[0]->start, n_save * 2);
+        if (n_save == sp) {
           nextPass[pos++] = el;
+          dbgout(el);
+          ++sp;
+          continue;
+        }
+        if (sp - n_save == 1) {
+          nextPass[pos++] = currPass[n_save];
+          dbgout(currPass[n_save]);
+          sp = n_save + 1;
+          continue;
+        }
+
+        int diff0 = checkLlessP(&currPass[n_save], sp - n_save, size);
+        int diff;
+        int x;
+        int n_save0 = n_save;
+        int best_diff = diff0;
+        do {
+          x = sp;
+          while (x - n_save > 1) {
+            diff = checkLlessP(&currPass[n_save], x - n_save, size);
+            if (diff < diff0) {
+              diff0 = diff;
+              sp = x;
+            }
+            --x;
+          }
+
+          x = n_save;
+          while (sp - x > 1) {
+            diff = checkLlessP(&currPass[x + 1], sp - x - 1, size);
+            if (diff < diff0) {
+              diff0 = diff;
+              n_save = x + 1;
+            }
+            ++x;
+          }
+          if (diff0 >= best_diff) break;
+          best_diff = diff0;
+        } while (1);
+
+        if (diff0 >= 0) {
+          while (n_save0 < sp) {
+            nextPass[pos++] = currPass[n_save0];
+            dbgout(currPass[n_save0]);
+            ++n_save0;
+          }
         }
         else {
-          for (int i = 0; i < n_save; ++i) {
-            el = save[i];
-            nextPass[pos++] = el;
-            dbgout(el);
+          while (n_save0 < n_save) {
+            nextPass[pos++] = currPass[n_save0];
+            dbgout(currPass[n_save0]);
+            ++n_save0;
+          }
+          if (n_save < sp) {
+            length = 0;
+            int start = currPass[n_save]->start;
+            while (n_save < sp) {
+              if (length + currPass[n_save]->length >= 16) {
+                if (length + currPass[n_save]->length == 16) {
+                  length = 16;
+                  ++n_save;
+                }
+                el = newEl(0, start, length);
+                nextPass[pos++] = el;
+
+                length = 0;
+                sp = n_save;
+              }
+              else {
+                length += currPass[n_save]->length;
+                ++n_save;
+              }
+            }
+            if (length) {
+              el = newEl(0, start, length);
+              nextPass[pos++] = el;
+            }
           }
         }
       }
-      q = 1 - q;
 
       bits = 0;
       for(int i = 0; i < pos; ++i){
@@ -645,10 +506,24 @@ BYTE * packline(BYTE *in,      /* src  */
       currPass = nextPass;
       nextPass = tmp;
 
-    } while( bits < min_bits );
+      ++round;
+    } while( round < 4 /* bits < min_bits */ );
   }
 
-//->  dbg = 1;
+  dbg = 0;
+
+#if 0
+  printf("---------------------\n");
+  stacksize = pos;
+  for(sp = 0; sp < stacksize; ++sp){
+    int start;
+    el = currPass[sp];
+    dbgout(el);
+  }
+  printf("\n---------------------\n");
+#endif
+
+  dbg = 0;
   stacksize = pos;
   bits = 0;
   for(sp = 0; sp < stacksize; ++sp){
@@ -668,6 +543,7 @@ BYTE * packline(BYTE *in,      /* src  */
       bits += 5+el->length*size;
     }
   }
+ 
   intobyte(8,0,&out); /* Set end mark */
   *out0 = (BYTE)(out - out0);
   if ( dbg ) printf(": %d(%d,%d)\n\n",bits,(bits+7)/8,*out0);
