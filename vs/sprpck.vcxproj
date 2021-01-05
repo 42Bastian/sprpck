@@ -140,7 +140,7 @@
       <OutputFile>$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy /b $(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt) $(SolutionDir)..\bin_win32</Command>
+      <Command>copy /b $(SolutionDir)$(Platform)\$(Configuration)\$(TargetName)$(TargetExt) $(SolutionDir)..\bin_win32_x64</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

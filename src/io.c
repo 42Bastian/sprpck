@@ -1,12 +1,3 @@
-//*****************************************************************************
-// VISUAL STUDIO I/O COMPATIBLITY
-#ifdef _MSC_VER
-#pragma warning (disable : 4996)		// For deprecated function names (open, etc.)
-#include <fcntl.h>
-#include <corecrt_io.h>
-#endif
-//*****************************************************************************
-
 #include "sprpck.h"
 #include "bmp.h"
 
@@ -20,11 +11,11 @@ int org_w,org_h;                                        // original size
 // prototypes
 //
 
-void  error(int line,char *w, ...);
-void  SaveRGB(char *filename,BYTE *data,int type,int size,int line);
-void  SaveSprite(char *filename,BYTE *data,int len,int line,int type);
-unsigned long  LoadFile(char *filename,BYTE **adr);
-long  ConvertFile(BYTE *in,long in_size,int type,int *in_h,int *in_w,int line);
+void error(int line,char *w, ...);
+void SaveRGB(char *filename,BYTE *data,int type,int size,int line);
+void SaveSprite(char *filename,BYTE *data,int len,int line,int type);
+uint32_t LoadFile(char *filename,BYTE **adr);
+long ConvertFile(BYTE *in,long in_size,int type,int *in_h,int *in_w,int line);
 
 /*******************************************************************/
 
@@ -680,9 +671,9 @@ BYTE* HandleOffset(BYTE * original,
   return (modified);
 }
 
-unsigned long LoadFile(char fn[],BYTE **ptr)
+uint32_t LoadFile(char fn[],BYTE **ptr)
 {
-  unsigned long len;
+  uint32_t len;
   int f;
 
   if ((f = open(fn,O_RDONLY | O_BINARY)) >= 0)

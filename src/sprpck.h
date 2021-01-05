@@ -1,14 +1,13 @@
 //#define DEBUG
- 
+#ifndef _SPRPCK_H_
+#define _SPRPCK_H_
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef UNIX
-#  include <fcntl.h>
-#endif
-
 #include <stdarg.h>
 #include <string.h>
+#include <fcntl.h>
+#include <stdint.h>
 
 #ifdef UNIX
 #  include <unistd.h>
@@ -17,12 +16,19 @@
 #ifdef MSDOS
 #  include <io.h>
 #  include <sys\stat.h>
-#  include <fcntl.h>
 #endif
 
 #ifndef O_BINARY
 #  define O_BINARY 0
 #endif
+
+//*****************************************************************************
+// VISUAL STUDIO I/O COMPATIBLITY
+#ifdef _MSC_VER
+#pragma warning (disable : 4996) // For deprecated function names (open, etc.)
+#include <corecrt_io.h>
+#endif
+//*****************************************************************************
 
 /* input types */
 #define TYPE_RAW4  0
@@ -33,20 +39,18 @@
 #define TYPE_PI1   5
 #define TYPE_BMP   6
 
-
 /* color-table output */
 #define C_HEADER   0
 #define ASM_SRC    1
 #define LYXASS_SRC 2
 
 #undef BYTE
-#define BYTE unsigned char
+#define BYTE uint8_t
 #ifndef UINT
 #  define UINT int
 #endif
 #undef USHORT
-#define USHORT unsigned short
-
+#define USHORT uint16_t
 
 /* PCX - offsets */
 #define PCX_MAGIC    0  /* must be 10 */
@@ -64,10 +68,12 @@
 #define PCX_PLANES  65  /* must be 1 */
 #define PCX_BPL     66
 #define PCX_PAL     68  /* must be 1 */
-#define PCX_DATA    128
+#define PCX_DATA   128
 
 #define BLINTEL(a,b) (*(a+b)+(*(a+b+1)<<8))
 
 #ifndef _MAIN_
 extern int verbose;
 #endif
+
+#endif /* _SPRPCK_H_ */

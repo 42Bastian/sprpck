@@ -61,7 +61,7 @@
    Code cleanup (more needed!)
 */
 
-#define VER "2.1"
+#define VER "2.2"
 #include "sprpck.h"
 
 int verbose;
@@ -69,14 +69,15 @@ BYTE rgb[32];
 BYTE CollRedirect[16];
 
 int dbg = 0;
+int global_dbg = 0;
 
 /* function-prototypes */
 /* io.c */
-extern  void  error(int line,char *w, ...);
-extern  void  SaveRGB(char *filename,BYTE *data,int type,int size,int line);
-extern  void  SaveSprite(char *filename,BYTE *data,int len,int line,int tzpe);
-extern  unsigned long  LoadFile(char *filename,BYTE **adr);
-extern  long  ConvertFile(BYTE *in,long in_size,int type,
+extern void error(int line,char *w, ...);
+extern void SaveRGB(char *filename,BYTE *data,int type,int size,int line);
+extern void SaveSprite(char *filename,BYTE *data,int len,int line,int tzpe);
+extern uint32_t LoadFile(char *filename,BYTE **adr);
+extern long ConvertFile(BYTE *in,long in_size,int type,
                           int *in_w,int *in_h,int line);
 extern BYTE* HandleOffset(BYTE * original,
                           int *in_w,int *in_h,
@@ -113,7 +114,6 @@ int CountColors(BYTE *raw, int iw, int w, int h, BYTE *pColIndexes)
   int   nCount,x,y;
   long  lSum;
 
-
   for ( x = 0; x < 16; ++x ) {     /* init. vectors */
     nColor[x] = 0;
     CollRedirect[x] = 0;
@@ -127,6 +127,7 @@ int CountColors(BYTE *raw, int iw, int w, int h, BYTE *pColIndexes)
       nColor[buffer[x]] += 1;
     }
   }
+
   nCount = 0;
   lSum = 0;
   for ( x = 0; x < 16; ++x ) {
@@ -138,6 +139,7 @@ int CountColors(BYTE *raw, int iw, int w, int h, BYTE *pColIndexes)
     lSum += nColor[x];
     //if (verbose) printf("Color# %d is used %d times.\n", x, nColor[x]);
   }
+
   if (verbose) {
     for ( x = 0; x < 16; ++x ){
       printf("%4.1d|",x);
@@ -170,7 +172,7 @@ int CountColors(BYTE *raw, int iw, int w, int h, BYTE *pColIndexes)
   insert 'bits' bits from 'val' into a byte
   if a byte is complete, write it to 'where'
 */
-void intobyte(int bits,BYTE val,BYTE **where)
+void intobyte(int bits, BYTE val, BYTE **where)
 {
   static BYTE bit_counter = 8, byte =0;
   BYTE *dst = *where;
@@ -181,16 +183,16 @@ void intobyte(int bits,BYTE val,BYTE **where)
     bit_counter = 8;
     byte = 0;
     return;
+
   case 8:
-    if (bit_counter != 8) {
-    //->    if ( dbg ) printf("|%02x %d ",byte, bit_counter);
-        /* handle end of line */
+//->    if ( dbg && global_dbg ) printf("|%02x %d ",byte, bit_counter);
+    /* handle end of line */
     *dst++ = byte;
     if (byte & 0x1) {
       *dst++ = 0;    /* be sure the last bit is never set ! */
     }
-  }
     break;
+
   default:
     if ( bit_counter >= bits ){
       val <<= (bit_counter - bits);
@@ -220,7 +222,7 @@ typedef struct el_s {
 
 void dbgout(el_t *el)
 {
-  if ( dbg ){
+  if ( dbg && global_dbg ){
     printf("%c%X ",el->packed ? 'P':'L',el->length-1);
 //->    printf("%d ",el->start);
     fflush(stdout);
@@ -283,7 +285,6 @@ BYTE * packline(BYTE *in,      /* src  */
   el_t *save[512];
   el_t **currPass;
   el_t **nextPass;
-  int n;
   el_t *el;
   el_t *last_L;
   el_t **tmp;
@@ -305,11 +306,11 @@ BYTE * packline(BYTE *in,      /* src  */
     return out0;
   }
 
-  intobyte(0,0,&out);             /* init.                    */
+  intobyte(0,0,&out);          /* init.                    */
 
 //->  printf("Line:%d\n",line++);
 
-  dbg = 0;
+//->  dbg = 0;
   BYTE last = 0xf;
   /* initial pack loop */
   index = 0;
@@ -370,7 +371,7 @@ BYTE * packline(BYTE *in,      /* src  */
       bits += 5+pass1[i]->length*size;
     }
   }
-  if ( dbg ) printf(": %d(%d)\n",bits,(bits+7)/8);
+  if ( dbg && global_dbg ) printf(": %d(%d)\n",bits,(bits+7)/8);
 
   currPass = pass1;
   int plimit[4] = { 6,5,4,3 };
@@ -379,7 +380,7 @@ BYTE * packline(BYTE *in,      /* src  */
 
   if ( optimize ){
     nextPass = pass2;
-    dbg = 0;
+    dbg = 1;
     bits = 0;
     int round = 0;
     do{
@@ -499,7 +500,7 @@ BYTE * packline(BYTE *in,      /* src  */
           bits += 5+nextPass[i]->length*size;
         }
       }
-      if ( dbg ) printf(": %d(%d)\n",bits,(bits+7)/8);
+      if ( dbg && global_dbg ) printf(": %d(%d)\n",bits,(bits+7)/8);
 
       //if (bits > min_bits) break;
       tmp = currPass;
@@ -510,20 +511,18 @@ BYTE * packline(BYTE *in,      /* src  */
     } while( round < 4 /* bits < min_bits */ );
   }
 
-  dbg = 0;
-
-#if 0
-  printf("---------------------\n");
-  stacksize = pos;
-  for(sp = 0; sp < stacksize; ++sp){
-    int start;
-    el = currPass[sp];
-    dbgout(el);
+//->  dbg = 0;
+  if ( dbg && global_dbg ){
+    printf("---------------------\n");
+    stacksize = pos;
+    for(sp = 0; sp < stacksize; ++sp){
+     el = currPass[sp];
+      dbgout(el);
+    }
+    printf("\n---------------------\n");
   }
-  printf("\n---------------------\n");
-#endif
 
-  dbg = 0;
+//->  dbg = 0;
   stacksize = pos;
   bits = 0;
   for(sp = 0; sp < stacksize; ++sp){
@@ -543,10 +542,10 @@ BYTE * packline(BYTE *in,      /* src  */
       bits += 5+el->length*size;
     }
   }
- 
-  intobyte(8,0,&out); /* Set end mark */
+
+  intobyte(8, 0, &out); /* Set end mark */
   *out0 = (BYTE)(out - out0);
-  if ( dbg ) printf(": %d(%d,%d)\n\n",bits,(bits+7)/8,*out0);
+  if ( dbg && global_dbg ) printf(": %d(%d,%d)\n\n",bits,(bits+7)/8,*out0);
   return out;
 }
 
@@ -763,14 +762,16 @@ int main(int argc,char *argv[])
   int nColorsUsed;
   int optimize;
   int edgePen;
+
 /* end of var. decl. */
 
+  global_dbg = 0;
   t_x = t_y = 1;
 
   if (argc == 1 ) {
     printf("-------------------------------\n"
            "Lynx Sprite Packer Ver "VER"\n"
-           "(c) 1997..2020 42Bastian Schick\n"
+           "(c) 1997..2021 42Bastian Schick\n"
            "                Matthias  Domin\n"
            "-------------------------------\n");
 
@@ -994,6 +995,10 @@ int main(int argc,char *argv[])
           h = val1;
           if (verbose) printf("Setting sprite-size : %d,%d\n",w,h);
         }
+        break;
+
+      case 'd':
+         global_dbg = 1;
         break;
 
       default :
