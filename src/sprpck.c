@@ -869,8 +869,13 @@ int main(int argc,char *argv[])
                     my_argv[6],my_argv[7],my_argv[8],my_argv[9],my_argv[10],
                     my_argv[11]);
 
-      if ( argc <= 0) break;
-
+        // Check for comment line
+      if (my_argv[1][0] == ';') {
+          continue;
+      }
+      else if (argc <= 0) {
+          break;
+      }
     }
     else
     {
