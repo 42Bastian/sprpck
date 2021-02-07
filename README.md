@@ -1,9 +1,10 @@
 # sprpck
 ```
 -------------------------------
-Lynx Sprite Packer Ver 2.0
-(c) 1997..2020 42Bastian Schick
-                Matthias  Domin
+Lynx Sprite Packer Ver 2.3
+(c) 1997..2021 42Bastian Schick
+               Matthias  Domin
+               LordKraken
 -------------------------------
 Usage :
 sprpck [-c][-v][-O0][-e#][-s#][-t#][-u][-p#]
