@@ -4,6 +4,8 @@
 Lynx Sprite Packer Ver 2.3
 (c) 1997..2021 42Bastian Schick
                Matthias  Domin
+Contributions from
+               Karri Kaksonen
                LordKraken
 -------------------------------
 Usage :
