@@ -719,6 +719,8 @@ int main( int argc, char *argv[] )
             "Lynx Sprite Packer Ver "VER"\n"
             "(c) 1997..2021 42Bastian Schick\n"
             "               Matthias  Domin\n"
+            "Contributions from\n"
+            "               Karri Kaksonen\n"
             "               LordKraken\n"
             "-------------------------------\n" );
     printf( "Usage :\n"
