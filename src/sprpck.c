@@ -61,7 +61,7 @@
    Code cleanup (more needed!)
 */
 
-#define VER "2.3"
+#define VER "2.4"
 #include "sprpck.h"
 
 int verbose;

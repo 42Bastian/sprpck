@@ -147,13 +147,15 @@ cls_data        dc.b 2,$10,0
 //->pal:
 //->	STANDARD_PAL
 //->	DP 000,842,AC8,484,E4E,FFF,446,84E,ACE,888,CC6,448,0FF,00F,773,855
-	include "../pic/bg24bit.pal"
+	include "/tmp/powerups_bomb.pal"
+//->	include "../pic/bg24bit.pal"
 bg_data:
  IF 0
 	ibytes "../pack.spr"
 bg2_data:
 	ibytes "../pack_old.spr"
  ELSE
-	ibytes "../pic/bg24bit.spr"
+	ibytes	"/tmp/powerups_bomb.spr"
+//->	ibytes "../pic/bg24bit.spr"
 //->	ibytes "../../BG.spr"
  ENDIF

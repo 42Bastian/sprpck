@@ -306,8 +306,8 @@ long ConvertPCX( BYTE * in, long in_size, int *in_w, int *in_h, int line )
         }
       }
     } /*while*/
-    if ( pByte != in+save_insize ) {
-      pByte = in+save_insize-16*3;
+    if ( pByte+769 == in+save_insize ) {
+      ++pByte;
       help = rgb;
       for ( x = 16 ; x ; --x ) {
         r = ( *pByte++ ) >> 4; /* red */
@@ -320,6 +320,7 @@ long ConvertPCX( BYTE * in, long in_size, int *in_w, int *in_h, int line )
         printf( "PCX:Using palette at the end of file !\n" );
       }
     }
+
   } else if ( bpp == 4 ) {
     x = org_w+1;
     count_bpl = bpl;
@@ -353,9 +354,8 @@ long ConvertPCX( BYTE * in, long in_size, int *in_w, int *in_h, int line )
         }
       }
     } /*while*/
-#if 1
-    if ( pByte != in+save_insize ) {
-      pByte = in+save_insize-16*3;
+    if ( pByte+769 == in+save_insize ) {
+      ++pByte;
       help = rgb;
       for ( x = 16 ; x ; --x ) {
         r = ( *pByte++ ) >> 4; /* red */
@@ -368,7 +368,6 @@ long ConvertPCX( BYTE * in, long in_size, int *in_w, int *in_h, int line )
         printf( "PCX:Using palette at the end of file !\n" );
       }
     }
-#endif
   } else { // 1bit / 8 planes
     for ( y = org_h; y ; --y, help += org_w ) {
       for ( i = org_w ; i ; --i ) {
