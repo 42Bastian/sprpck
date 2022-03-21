@@ -217,9 +217,12 @@ long ConvertBMP( BYTE * in, long in_size, int *in_w, int *in_h, int line )
       }
       // 10/20/2018: nop90 - there are different bmp types with different
       //                     BITMAPINFOHEADER sizes. Better use size field
-      pByte = in + sizeof( BITMAPFILEHEADER ) + inbmpinfo->bmiHeader.biSize-2;
+      pByte = in + sizeof( BITMAPFILEHEADER ) + inbmpinfo->bmiHeader.biSize;
       help = rgb;
       for ( x = 16 ; x ; --x )  {
+#if DEBUG
+        printf("Color %d = %x %x %x\n",16-x, pByte[0],pByte[1],pByte[2]);
+#endif  
         // RGBQUAD !!!
         b = ( *pByte++ ) >> 4; /* rgbBlue */
         g = ( *pByte++ ) >> 4; /* rgbGreen */
