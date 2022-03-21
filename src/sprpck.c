@@ -980,7 +980,7 @@ int main( int argc, char *argv[] )
           error( line, "Wrong picture-size (%d)\n", in_size );
         }
 #ifdef DEBUG
-        SaveSprite( "raw.spr", original, in_size, line );
+        //SaveSprite( "raw.spr", original, in_size, line );
         printf( "w=%d, h=%d size=%ld\n", in_w, in_h, in_size );
 #endif
       } else {
