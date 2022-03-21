@@ -75,7 +75,7 @@ int global_dbg = 0;
 /* io.c */
 extern void error( int line, char *w, ... );
 extern void SaveRGB( char *filename, char *palname,  BYTE *data, int type, int size, int line );
-extern void SaveSprite( char *filename, BYTE *data, int len, int line, int tzpe );
+extern void SaveSprite( char *filename, char *spritename, BYTE *data, int len, int line, int tzpe );
 extern uint32_t LoadFile( char *filename, BYTE **adr );
 extern long ConvertFile( BYTE *in, long in_size, int type,
                          int *in_w, int *in_h, int line );
@@ -1131,7 +1131,9 @@ int main( int argc, char *argv[] )
           } else {
             sprintf( outfile2, "%s%3.3d%3.3d%s", outfile, t_yy, t_xx, extension );
           }
-          SaveSprite( outfile2, out, ret, line, pal_output );
+          char spritename[128];
+          getCleanName(spritename, outfile2);
+          SaveSprite( outfile2, spritename, out, ret, line, pal_output );
           free( out );
         } else {
           error( line, "Packed size = 0!" );

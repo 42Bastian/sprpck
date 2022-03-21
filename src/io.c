@@ -13,7 +13,7 @@ int org_w, org_h;                                       // original size
 
 void error( int line, char *w, ... );
 void SaveRGB( char *filename, char *palname, BYTE *data, int type, int size, int line );
-void SaveSprite( char *filename, BYTE *data, int len, int line, int type );
+void SaveSprite( char *filename, char *spritesname, BYTE *data, int len, int line, int type );
 uint32_t LoadFile( char *filename, BYTE **adr );
 long ConvertFile( BYTE *in, long in_size, int type, int *in_h, int *in_w, int line );
 
@@ -683,7 +683,7 @@ void SaveRGB( char *filename, char *palname, BYTE *pal, int type, int size, int 
   }
 }
 
-void SaveSprite( char *filename, BYTE *ptr, int size, int line, int type )
+void SaveSprite( char *filename, char *spritename, BYTE *ptr, int size, int line, int type )
 {
   if ( type != C_HEADER ) {
     int handle;
@@ -696,16 +696,12 @@ void SaveSprite( char *filename, BYTE *ptr, int size, int line, int type )
     close( handle );
   } else {
     FILE * out;
-    char label[34] = "_";
+    char label[129] = "_";
     int i, o, segdata;
-    char * dot;
     if ( ( out = fopen( filename, "wb" ) ) == NULL ) {
       error( line, "Couldn't open %s !\n", filename );
     }
-    dot = strrchr( filename, '.' );
-    *dot = 0;
-    strcat( label, filename );
-    *dot = '.';
+    strcat( label, spritename );
     segdata = size + ( ( size+0x1f ) >> 5 );
     putc( 0xfd, out );
     putc( 0xfd, out ); /*magic*/
