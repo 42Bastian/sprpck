@@ -29,3 +29,8 @@ vs/x64/Release/sprpck.ipdb
 vs/.vs/sprpck/v14/.suo
 vs/x64/Release/sprpck.Build.CppClean.log
 vs/Release/sprpck.Build.CppClean.log
+
+.vscode
+.DS_Store
+*.o
+Src/sprpck

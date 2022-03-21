@@ -74,7 +74,7 @@ int global_dbg = 0;
 /* function-prototypes */
 /* io.c */
 extern void error( int line, char *w, ... );
-extern void SaveRGB( char *filename, BYTE *data, int type, int size, int line );
+extern void SaveRGB( char *filename, char *palname,  BYTE *data, int type, int size, int line );
 extern void SaveSprite( char *filename, BYTE *data, int len, int line, int tzpe );
 extern uint32_t LoadFile( char *filename, BYTE **adr );
 extern long ConvertFile( BYTE *in, long in_size, int type,
@@ -675,6 +675,49 @@ int get2val( char * s, int *a, int *b )
   return ( 1 );
 }
 
+//remove any char not valid for a label in C or ASM
+char *getCleanName(char *cleanname, char *filename)
+{
+  char *delim;
+
+  //path delimiters
+  strcpy( cleanname, filename );
+  delim = strchr( cleanname, '/' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, '/' );
+  }
+
+  delim = strchr( cleanname, '\\' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, '/' );
+  }
+
+  //space in filename
+  delim = strchr( cleanname, ' ' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, ' ' );
+  }
+
+  //remove the extension
+  delim = strrchr( cleanname, '.' );
+  if ( delim != NULL ) {
+    *delim = 0;
+    *( cleanname+( delim-cleanname ) ) = 0;
+  }
+
+  //now remove the . in path (directory or filename)
+  delim = strchr( cleanname, '.' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, '.' );
+  }
+
+  return cleanname;
+}
+
 /****************************************************************/
 #define CMD_OPT 14+1 /* command = argv[0] ! */
 
@@ -696,6 +739,7 @@ int main( int argc, char *argv[] )
   char outfile[128];
   char outfile2[128];
   char palfile[128];
+  char palname[128];
   char * extension;
   BYTE *out;
   int w, h, action_x, action_y, off_x, off_y, size, packed, type, sort_colindex, tiles, setsize;
@@ -980,7 +1024,7 @@ int main( int argc, char *argv[] )
           error( line, "Wrong picture-size (%d)\n", in_size );
         }
 #ifdef DEBUG
-        SaveSprite( "raw.spr", original, in_size, line );
+        //SaveSprite( "raw.spr", original, in_size, line );
         printf( "w=%d, h=%d size=%ld\n", in_w, in_h, in_size );
 #endif
       } else {
@@ -996,6 +1040,9 @@ int main( int argc, char *argv[] )
     if ( *my_argv[i] == 0 || !sscanf( my_argv[i], "%s", outfile ) ) {
       strcpy( outfile, infile );
     }
+    //set it before adding extension
+    getCleanName(palname, outfile);
+
     //
     // create output-filenames
     //
@@ -1011,6 +1058,7 @@ int main( int argc, char *argv[] )
     } else {
       extension = ( char * )&".obj";
     }
+    //
     //
     // if sprite-size is not defined, take input-size as default
     //
@@ -1075,7 +1123,7 @@ int main( int argc, char *argv[] )
         if ( ret ) {
           if ( tiles == 1 ) // Only once
             if ( type == TYPE_PCX || type == TYPE_PI1 || type == TYPE_BMP ) {
-              SaveRGB( palfile, rgb, pal_output, size, line );
+              SaveRGB( palfile, palname, rgb, pal_output, size, line );
             }
           // if just one tile, use the original outfile name
           if ( t_x * t_y == 1 ) {

@@ -12,7 +12,7 @@ int org_w, org_h;                                       // original size
 //
 
 void error( int line, char *w, ... );
-void SaveRGB( char *filename, BYTE *data, int type, int size, int line );
+void SaveRGB( char *filename, char *palname, BYTE *data, int type, int size, int line );
 void SaveSprite( char *filename, BYTE *data, int len, int line, int type );
 uint32_t LoadFile( char *filename, BYTE **adr );
 long ConvertFile( BYTE *in, long in_size, int type, int *in_h, int *in_w, int line );
@@ -579,12 +579,12 @@ uint32_t LoadFile( char fn[], BYTE **ptr )
       return 0;
     }
 #ifdef DEBUG
-    printf( "filesize: %lu\n", len );
+    printf( "filesize: %u\n", len );
 #endif
     len = read( f, *ptr, len );
 #ifdef DEBUG
     //printf("sizeof(int): %u\n", sizeof(int));
-    printf( "bytes read: %lu\n", len );
+    printf( "bytes read: %u\n", len );
 #endif
     close( f );
     if ( verbose ) {
@@ -596,18 +596,21 @@ uint32_t LoadFile( char fn[], BYTE **ptr )
   }
 }
 
-void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
+
+
+void SaveRGB( char *filename, char *palname, BYTE *pal, int type, int size, int line )
 {
   int i;
   FILE *f;
   BYTE *pal2 = pal+1, g, br;
   BYTE *pCollRedirect = CollRedirect;
+
   if ( ( f = fopen( filename, "w" ) ) == NULL ) {
     error( line, "Couln't write color-table !\n" );
   }
   switch ( type ) {
   case C_HEADER:
-    fprintf( f, "char redir[]={" );
+    fprintf( f, "char %s_redir[]={", palname );
     for ( i = 1<<( size-1 ) ; i ; --i ) {
       g = *pCollRedirect++;
       br = *pCollRedirect++;
@@ -616,7 +619,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
         putc( ',', f );
       }
     }
-    fprintf( f, "};\nchar pal[]={\n\t" );
+    fprintf( f, "};\nchar %s_pal[]={\n\t", palname );
     for ( i = 16 ; i ; --i, pal += 2 ) {
       fprintf( f, "0x%02X,", ( int )*pal );
     }
@@ -629,7 +632,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
       }
     break;
   case ASM_SRC:
-    fprintf( f, "redir:\tdc.b " );
+    fprintf( f, "%s_redir:\tdc.b ", palname );
     for ( i = 1<<( size-1 ) ; i ; --i ) {
       g = *pCollRedirect++;
       br = *pCollRedirect++;
@@ -638,7 +641,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
         putc( ',', f );
       }
     }
-    fprintf( f, "\npal:\tdc.b " );
+    fprintf( f, "\n%s_pal:\tdc.b ", palname );
     for ( i = 16; i ; --i, pal += 2 )
       if ( i > 1 ) {
         fprintf( f, "$%02X,", ( int )*pal );
@@ -653,7 +656,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
       }
     break;
   case LYXASS_SRC:
-    fprintf( f, "redir:\tdc.b " );
+    fprintf( f, "%s_redir:\tdc.b ", palname );
     for ( i = 1<<( size-1 ) ; i ; --i ) {
       g = *pCollRedirect++;
       br = *pCollRedirect++;
@@ -662,7 +665,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
         putc( ',', f );
       }
     }
-    fprintf( f, "\npal:\tDP " );
+    fprintf( f, "\n%s_pal:\tDP ", palname );
     for ( i = 16; i ; --i ) {
       g = *pal++;
       br = *pal++;
