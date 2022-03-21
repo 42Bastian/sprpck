@@ -579,12 +579,12 @@ uint32_t LoadFile( char fn[], BYTE **ptr )
       return 0;
     }
 #ifdef DEBUG
-    printf( "filesize: %lu\n", len );
+    printf( "filesize: %u\n", len );
 #endif
     len = read( f, *ptr, len );
 #ifdef DEBUG
     //printf("sizeof(int): %u\n", sizeof(int));
-    printf( "bytes read: %lu\n", len );
+    printf( "bytes read: %u\n", len );
 #endif
     close( f );
     if ( verbose ) {
@@ -596,18 +596,66 @@ uint32_t LoadFile( char fn[], BYTE **ptr )
   }
 }
 
+//remove any char not valid for a label in C or ASM
+char *getCleanName(char *cleanname, char *filename)
+{
+  char *delim;
+
+  //path delimiters
+  strcpy( cleanname, filename );
+  delim = strchr( cleanname, '/' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, '/' );
+  }
+
+  delim = strchr( cleanname, '\\' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, '/' );
+  }
+
+  //space in filename
+  delim = strchr( cleanname, ' ' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, ' ' );
+  }
+
+  //remove the extension
+  delim = strrchr( cleanname, '.' );
+  if ( delim != NULL ) {
+    *delim = 0;
+    *( cleanname+( delim-cleanname ) ) = 0;
+  }
+
+  //now remove the . in path (directory or filename)
+  delim = strchr( cleanname, '.' );
+  while ( delim != NULL ) {
+    *delim = '_';
+    delim = strchr( cleanname, '.' );
+  }
+
+  return cleanname;
+}
+
 void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
 {
   int i;
   FILE *f;
   BYTE *pal2 = pal+1, g, br;
   BYTE *pCollRedirect = CollRedirect;
+  char cleanname[128];
+  
+  
+   getCleanName(cleanname, filename);
+
   if ( ( f = fopen( filename, "w" ) ) == NULL ) {
     error( line, "Couln't write color-table !\n" );
   }
   switch ( type ) {
   case C_HEADER:
-    fprintf( f, "char redir[]={" );
+    fprintf( f, "char %s_redir[]={", cleanname );
     for ( i = 1<<( size-1 ) ; i ; --i ) {
       g = *pCollRedirect++;
       br = *pCollRedirect++;
@@ -616,7 +664,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
         putc( ',', f );
       }
     }
-    fprintf( f, "};\nchar pal[]={\n\t" );
+    fprintf( f, "};\nchar %s_pal[]={\n\t", cleanname );
     for ( i = 16 ; i ; --i, pal += 2 ) {
       fprintf( f, "0x%02X,", ( int )*pal );
     }
@@ -629,7 +677,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
       }
     break;
   case ASM_SRC:
-    fprintf( f, "redir:\tdc.b " );
+    fprintf( f, "%s_redir:\tdc.b ", cleanname );
     for ( i = 1<<( size-1 ) ; i ; --i ) {
       g = *pCollRedirect++;
       br = *pCollRedirect++;
@@ -638,7 +686,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
         putc( ',', f );
       }
     }
-    fprintf( f, "\npal:\tdc.b " );
+    fprintf( f, "\n%s_pal:\tdc.b ", cleanname );
     for ( i = 16; i ; --i, pal += 2 )
       if ( i > 1 ) {
         fprintf( f, "$%02X,", ( int )*pal );
@@ -653,7 +701,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
       }
     break;
   case LYXASS_SRC:
-    fprintf( f, "redir:\tdc.b " );
+    fprintf( f, "%s_redir:\tdc.b ", cleanname );
     for ( i = 1<<( size-1 ) ; i ; --i ) {
       g = *pCollRedirect++;
       br = *pCollRedirect++;
@@ -662,7 +710,7 @@ void SaveRGB( char *filename, BYTE *pal, int type, int size, int line )
         putc( ',', f );
       }
     }
-    fprintf( f, "\npal:\tDP " );
+    fprintf( f, "\n%s_pal:\tDP ", cleanname );
     for ( i = 16; i ; --i ) {
       g = *pal++;
       br = *pal++;
