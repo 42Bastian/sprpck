@@ -13,7 +13,7 @@ int org_w, org_h;                                       // original size
 
 void error( int line, char *w, ... );
 void SaveRGB( char *filename, char *palname, BYTE *data, int type, int size, int line );
-void SaveSprite( char *filename, char *spritesname, BYTE *data, int len, int line, int type );
+void SaveSprite( char *filename, char *spritename, BYTE *data, int len, int line, int type );
 uint32_t LoadFile( char *filename, BYTE **adr );
 long ConvertFile( BYTE *in, long in_size, int type, int *in_h, int *in_w, int line );
 
