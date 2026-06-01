@@ -1,4 +1,9 @@
 # sprpck
+
+Further development moved to
+
+https://codeberg.org/42Bastian/sprpck
+
 ```
 -------------------------------
 Lynx Sprite Packer Ver 2.3
